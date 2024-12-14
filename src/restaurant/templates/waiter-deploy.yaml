@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waiter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: waiter
+  template:
+    metadata:
+      labels:
+        app: waiter
+    spec:
+      containers:
+      - name: waiter
+        image: "{{ .Values.waiter.image.repository }}:{{ .Values.waiter.image.tag }}"
+        imagePullPolicy: {{ .Values.waiter.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8081
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8081"
+        - name: AMQP_ADDR
+          value: "amqp://{{ .Values.rabbitmq.user }}:{{ .Values.rabbitmq.password }}@{{ .Values.rabbitmq.host }}:{{ .Values.rabbitmq.port }}/%2f"

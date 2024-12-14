@@ -1,0 +1,29 @@
+menu:
+  image:
+    repository: restaurant/menu
+    tag: latest
+    pullPolicy: Never
+  config:
+    port: "8080"
+
+waiter:
+  image:
+    repository: restaurant/waiter
+    tag: latest
+    pullPolicy: Never
+  config:
+    port: "8081"
+
+rabbitmq: 
+  host: "10.0.2.15" # host.minikube.internal not good had to change to this
+  port: "5672"
+  user: "guest"
+  password: "guest"
+  vhost: "/"
+
+postgres:
+  host: "10.0.2.15"
+  port: "5432"
+  database: "restaurant"
+  user: "restaurant"
+  password: "devpassword"

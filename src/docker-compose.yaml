@@ -1,0 +1,55 @@
+services:
+  # postgres:
+  #   networks:
+  #     - restaurant_net
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_USER: restaurant
+  #     POSTGRES_PASSWORD: devpassword
+  #     POSTGRES_DB: restaurant
+  #   ports:
+  #     - "0.0.0.0:5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U restaurant"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=YOUR_USERNAME
+      - RABBITMQ_DEFAULT_PASS=YOUR_PASSWORD
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+networks:
+  default:
+    driver: bridge
+
+#   chef:
+#     networks:
+#       - restaurant_net
+#     build:
+#       context: ./chef
+#       dockerfile: Dockerfile
+#     environment:
+#       DATABASE_URL: "postgres://restaurant:devpassword@postgres:5432/restaurant?sslmode=disable"
+#       AMQP_ADDR: "amqp://guest:guest@rabbitmq:5672/"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#       rabbitmq:
+#         condition: service_healthy
+
+# volumes:
+#   postgres_data:
+
+# networks:
+#   restaurant_net:
+#     driver: bridge
