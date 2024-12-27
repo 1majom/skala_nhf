@@ -81,3 +81,6 @@ de belül több részre (mikroszolgáltatás) van darabolva. A mikroszolgáltat�
 - ALLHF;6
 
 Sum: 78
+
+
+a
