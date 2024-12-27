@@ -3,3 +3,4 @@ src/all*
 src/all*
 src/l*.sh
 src/menu/Cargo.lock
+src/acr-secret.yaml

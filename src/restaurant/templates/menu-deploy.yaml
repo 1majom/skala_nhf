@@ -12,6 +12,8 @@ spec:
       labels:
         app: menu
     spec:
+      imagePullSecrets:
+        - name: acr-secret
       containers:
       - name: menu
         image: "{{ .Values.menu.image.repository }}:{{ .Values.menu.image.tag }}"

@@ -1,16 +1,16 @@
 menu:
   image:
-    repository: restaurant/menu
+    repository: acrad0mka.azurecr.io/menu  # For local: restaurant/menu
     tag: latest
-    pullPolicy: Never
+    pullPolicy: Always
   config:
     port: "8080"
 
 waiter:
   image:
-    repository: restaurant/waiter
+    repository: acrad0mka.azurecr.io/waiter  # For local: restaurant/waiter
     tag: latest
-    pullPolicy: Never
+    pullPolicy: Always
   config:
     port: "8081"
 

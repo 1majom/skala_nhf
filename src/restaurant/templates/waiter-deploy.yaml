@@ -12,6 +12,8 @@ spec:
       labels:
         app: waiter
     spec:
+      imagePullSecrets:
+        - name: acr-secret
       containers:
       - name: waiter
         image: "{{ .Values.waiter.image.repository }}:{{ .Values.waiter.image.tag }}"
