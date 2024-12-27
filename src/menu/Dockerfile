@@ -1,21 +1,23 @@
-FROM rust:1.75.0-slim AS builder
+FROM rust:latest AS builder
+
+# Install build dependencies including OpenSSL and pkg-config
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    openssl && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/menu
-COPY Cargo.toml ./
-
-# Create dummy main.rs and build dependencies
-RUN mkdir src && \
-    echo "fn main() {println!(\"dummy\");}" > src/main.rs && \
-    cargo build --release && \
-    rm -f target/release/deps/menu*
-
-# Copy actual source and build
-COPY src ./src
+COPY . .
 RUN cargo build --release
 
 FROM debian:bookworm-slim
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libssl3 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/local/bin

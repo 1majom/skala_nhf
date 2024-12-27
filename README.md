@@ -63,7 +63,7 @@ graph TD
 - CICD;10
   - CI/CD folyamat implementálása valamely elterjedt DevOps eszközre építve (GitHub Actions, Azure DevOps). Git push-ra a backend új verziója elkészül és kitelepül: 10 pont
     - egy platformra telepít
-- OPACR;5 
+- OPACR;5
   - Konténerek vagy helm chart(ok) letöltése on-premise klaszterbe saját Azure Container Registry-ből: 5 pont
     - anonim eléréssel
 - OPSTR;5
