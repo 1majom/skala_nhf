@@ -6,6 +6,6 @@ spec:
   selector:
     app: waiter
   ports:
-  - port: 8081
-    targetPort: 8081
+  - port: {{ .Values.waiter.config.port }}
+    targetPort: {{ .Values.waiter.config.port }}
   type: NodePort

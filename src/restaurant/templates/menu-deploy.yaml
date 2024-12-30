@@ -14,12 +14,16 @@ spec:
     spec:
       imagePullSecrets:
         - name: acr-secret
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z postgres 5432; do echo "Waiting for postgres..."; sleep 2; done; echo "Postgres is up!"']
       containers:
       - name: menu
         image: "{{ .Values.menu.image.repository }}:{{ .Values.menu.image.tag }}"
         imagePullPolicy: {{ .Values.menu.image.pullPolicy }}
         ports:
-        - containerPort: 8080
+        - containerPort: {{ .Values.menu.config.port }}
         env:
         - name: PORT
           valueFrom:

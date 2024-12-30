@@ -6,13 +6,13 @@ minikube start
 eval $(minikube docker-env)
 docker build -t restaurant/menu:latest ./menu
 docker build -t restaurant/waiter:latest ./waiter
+docker build -t restaurant/chef:latest ./chef
 
 helm install restaurant ./restaurant
 kubectl get pods
 
 # in a different terminal
-(trap 'kill $(jobs -p); exit' INT; kubectl port-forward service/menu 8080:8080 & kubectl port-forward service/waiter 8081:8081 & wait)
-
+(trap 'kill $(jobs -p); exit' INT; kubectl port-forward service/menu 8080:8080 & kubectl port-forward service/waiter 8081:8081 & kubectl port-forward service/rabbitmq 15672:15672 & wait)
 
 # in a different terminal!
 docker compose up -d --build
@@ -20,11 +20,6 @@ docker compose up -d --build
 # reset
 
 helm uninstall restaurant
-docker compose down
-docker rmi src-chef:latest 
-docker rmi restaurant/waiter:latest 
-docker build -t restaurant/waiter:latest ./waiter
-docker compose up --build -d
 helm install restaurant ./restaurant/
 
 
@@ -45,7 +40,7 @@ curl -X POST http://localhost:8080/menu \
 -d '{
   "name": "kola",
   "price": 500,
-  "isAvailable": true
+  "is_available": true
 }'
 
 # Check menu items

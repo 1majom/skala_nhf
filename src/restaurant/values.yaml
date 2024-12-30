@@ -1,29 +1,37 @@
 menu:
   image:
-    repository: acrad0mka.azurecr.io/menu  # For local: restaurant/menu
+    repository: restaurant/menu  # For local: restaurant/menu
     tag: latest
-    pullPolicy: Always
+    pullPolicy: Never            # For local: Never
   config:
     port: "8080"
 
 waiter:
   image:
-    repository: acrad0mka.azurecr.io/waiter  # For local: restaurant/waiter
+    repository: restaurant/waiter  # For local: restaurant/waiter
     tag: latest
-    pullPolicy: Always
+    pullPolicy: Never              # For local: Never
   config:
     port: "8081"
 
 rabbitmq: 
-  host: "host.minikube.internal"
+  host: "rabbitmq"
   port: "5672"
   user: "guest"
   password: "guest"
   vhost: "/"
 
 postgres:
-  host: "host.minikube.internal"
+  host: "postgres"
   port: "5432"
   database: "restaurant"
   user: "restaurant"
   password: "devpassword"
+
+chef:
+  image:
+    repository: restaurant/chef  # For local: restaurant/chef
+    tag: latest
+    pullPolicy: Never            # For local: Never
+  config:
+    port: "8080"

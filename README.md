@@ -1,4 +1,5 @@
 ### Skála nagyházifeladat
+
 Egy éttermi ügyviteli rendszert szeretnék felépíteni. Amit próbáltam olyan módon elképzelni, hogy tükrözhesse az elvárásokat.
   -  vendég
      -  az emberek akik rendelést adnak le, feltételezzük, hogy előre fizetnek
@@ -26,20 +27,15 @@ graph TD
     subgraph "k8s, aks?"
       3[menü backend]
       4[Pincér backend]
-    end
-    subgraph docker-compose
       10[DB]
       5[RabbitMQ]
       6[Séf backend]
-    end
-    
-    
-    
+  end
+        
     1 --> 3
     1 --> 4
     4 --> 3
     2 --> 4
-  
     4 --> 5
     5 --> 6
     6 --> 10
@@ -77,10 +73,7 @@ de belül több részre (mikroszolgáltatás) van darabolva. A mikroszolgáltat�
     - Azure Kubernetes Services (AKS)
     - Azure Functions (AZF)
     - Azure Container Apps (ACA)
-
 - ALLHF;6
+  - összes kisházi
 
 Sum: 78
-
-
-a

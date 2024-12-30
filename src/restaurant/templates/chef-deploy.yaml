@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chef
+  labels:
+    app: chef
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chef
+  template:
+    metadata:
+      labels:
+        app: chef
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z postgres 5432; do echo "Waiting for postgres..."; sleep 2; done; echo "Postgres is up!"']
+        - name: wait-for-rabbitmq
+          image: busybox
+          command: ['sh', '-c', 'until nc -z rabbitmq 5672; do echo "Waiting for RabbitMQ..."; sleep 2; done; echo "RabbitMQ is up!"']
+      containers:
+        - name: chef
+          image: "{{ .Values.chef.image.repository }}:{{ .Values.chef.image.tag }}"
+          imagePullPolicy: {{ .Values.chef.image.pullPolicy }}
+          env:
+            - name: DATABASE_URL
+              value: "postgres://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}?sslmode=disable"
+            - name: AMQP_ADDR
+              value: "amqp://{{ .Values.rabbitmq.user }}:{{ .Values.rabbitmq.password }}@{{ .Values.rabbitmq.host }}:{{ .Values.rabbitmq.port }}/{{ .Values.rabbitmq.vhost }}"

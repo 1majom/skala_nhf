@@ -14,13 +14,20 @@ spec:
     spec:
       imagePullSecrets:
         - name: acr-secret
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z postgres 5432; do echo "Waiting for postgres..."; sleep 2; done; echo "Postgres is up!"']
+        - name: wait-for-rabbitmq
+          image: busybox
+          command: ['sh', '-c', 'until nc -z rabbitmq 5672; do echo "Waiting for RabbitMQ..."; sleep 2; done; echo "RabbitMQ is up!"']
       containers:
       - name: waiter
         image: "{{ .Values.waiter.image.repository }}:{{ .Values.waiter.image.tag }}"
         imagePullPolicy: {{ .Values.waiter.image.pullPolicy }}
         ports:
         - name: http
-          containerPort: 8081
+          containerPort: {{ .Values.waiter.config.port }}
           protocol: TCP
         env:
         - name: PORT
