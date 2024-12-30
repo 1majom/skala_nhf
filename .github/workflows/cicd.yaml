@@ -29,10 +29,8 @@ jobs:
 
   build-menu:
     needs: check-changes
-    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.menu == 'true' }}
+    if: needs.check-changes.outputs.menu == 'true' || env.FORCE_BUILD == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      was_built: ${{ steps.set-built.outputs.was_built }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
@@ -49,15 +47,11 @@ jobs:
         context: ./src/menu
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/menu:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/menu:latest
-    - id: set-built
-      run: echo "was_built=true" >> $GITHUB_OUTPUT
 
   build-waiter:
     needs: check-changes
-    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.waiter == 'true' }}
+    if: needs.check-changes.outputs.waiter == 'true' || env.FORCE_BUILD == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      was_built: ${{ steps.set-built.outputs.was_built }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
@@ -74,15 +68,11 @@ jobs:
         context: ./src/waiter
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/waiter:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/waiter:latest
-    - id: set-built
-      run: echo "was_built=true" >> $GITHUB_OUTPUT
 
   build-chef:
     needs: check-changes
-    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.chef == 'true' }}
+    if: needs.check-changes.outputs.chef == 'true' || env.FORCE_BUILD == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      was_built: ${{ steps.set-built.outputs.was_built }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
@@ -99,19 +89,15 @@ jobs:
         context: ./src/chef
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/chef:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/chef:latest
-    - id: set-built
-      run: echo "was_built=true" >> $GITHUB_OUTPUT
 
   deploy:
     needs: [check-changes, build-menu, build-waiter, build-chef]
     if: |
-      always() &&
-      (needs.check-changes.result == 'success') &&
-      (github.env.FORCE_BUILD == 'true' || 
-        (needs.build-menu.result == 'success' && needs.build-menu.outputs.was_built == 'true') ||
-        (needs.build-waiter.result == 'success' && needs.build-waiter.outputs.was_built == 'true') ||
-        (needs.build-chef.result == 'success' && needs.build-chef.outputs.was_built == 'true')
-      )
+      always() && 
+      needs.check-changes.result == 'success' && 
+      (needs.build-menu.result == 'success' || needs.build-menu.result == 'skipped') &&
+      (needs.build-waiter.result == 'success' || needs.build-waiter.result == 'skipped') &&
+      (needs.build-chef.result == 'success' || needs.build-chef.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
