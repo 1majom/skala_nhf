@@ -35,7 +35,7 @@ jobs:
 
   build-menu:
     needs: check-changes
-    if: needs.check-changes.outputs.menu == 'true' || github.env.FORCE_BUILD == 'true'
+    if: ${{ needs.check-changes.outputs.menu == 'true' || contains(env.FORCE_BUILD, 'true') }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
