@@ -16,6 +16,12 @@ jobs:
       chef: ${{ steps.filter.outputs.chef }}
     steps:
     - uses: actions/checkout@v4
+    - name: Debug Environment
+      run: |
+        echo "FORCE_BUILD from env: ${{ env.FORCE_BUILD }}"
+        echo "FORCE_BUILD directly: $FORCE_BUILD"
+        echo "All environment variables:"
+        env
     - uses: dorny/paths-filter@v2
       id: filter
       with:
