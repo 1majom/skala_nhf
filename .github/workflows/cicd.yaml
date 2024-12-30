@@ -2,7 +2,7 @@ name: Pipeline
 
 on:
   push:
-    branches: [ "cicd_test" ]
+    branches: [ "main" ]
 
 env:
   MENU_IMAGE_NAME: menu
