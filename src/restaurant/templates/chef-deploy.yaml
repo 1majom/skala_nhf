@@ -14,6 +14,8 @@ spec:
       labels:
         app: chef
     spec:
+      imagePullSecrets:
+        - name: acr-secret
       initContainers:
         - name: wait-for-postgres
           image: busybox
