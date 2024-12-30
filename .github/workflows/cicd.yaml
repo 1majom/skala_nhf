@@ -114,7 +114,7 @@ jobs:
           kubectl config set clusters.minikube.server https://${{ secrets.LOCALKUBEIP }}:8443
           kubectl config use-context minikube
           kubectl cluster-info || exit 1
-        - name: Create ACR Secret
+    - name: Create ACR Secret
       run: |
         kubectl create secret docker-registry acr-secret \
           --docker-server=${{ secrets.AZURE_ACR_URL }} \
