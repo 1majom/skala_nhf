@@ -5,9 +5,7 @@ on:
     branches: [ "cicd_test" ]
 
 env:
-  MENU_IMAGE_NAME: menu
-  WAITER_IMAGE_NAME: waiter
-  CHEF_IMAGE_NAME: chef
+  FORCE_BUILD: true
 
 jobs:
   check-changes:
@@ -31,8 +29,10 @@ jobs:
 
   build-menu:
     needs: check-changes
-    if: needs.check-changes.outputs.menu == 'true'
+    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.menu == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      FORCE_BUILD: ${{ secrets.FORCE_BUILD }} 
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
@@ -52,8 +52,10 @@ jobs:
 
   build-waiter:
     needs: check-changes
-    if: needs.check-changes.outputs.waiter == 'true'
+    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.waiter == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      FORCE_BUILD: ${{ secrets.FORCE_BUILD }}  
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
@@ -73,8 +75,10 @@ jobs:
 
   build-chef:
     needs: check-changes
-    if: needs.check-changes.outputs.chef == 'true'
+    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.chef == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      FORCE_BUILD: ${{ secrets.FORCE_BUILD }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Docker Buildx
