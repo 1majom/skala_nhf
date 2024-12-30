@@ -29,7 +29,7 @@ jobs:
 
   build-menu:
     needs: check-changes
-    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.menu == 'true' }}
+    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.menu == 'true' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
 
   build-waiter:
     needs: check-changes
-    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.waiter == 'true' }}
+    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.waiter == 'true' }}
     runs-on: ubuntu-latest
     env:
       FORCE_BUILD: ${{ secrets.FORCE_BUILD }}  
@@ -73,7 +73,7 @@ jobs:
 
   build-chef:
     needs: check-changes
-    if: ${{ env.FORCE_BUILD == 'true' || needs.check-changes.outputs.chef == 'true' }}
+    if: ${{ github.env.FORCE_BUILD == 'true' || needs.check-changes.outputs.chef == 'true' }}
     runs-on: ubuntu-latest
     env:
       FORCE_BUILD: ${{ secrets.FORCE_BUILD }}
