@@ -58,6 +58,14 @@ jobs:
 
     - name: Set up Helm
       uses: azure/setup-helm@v3
+
+    - name: Create ACR Secret
+      run: |
+        kubectl create secret docker-registry acr-secret \
+          --docker-server=${{ secrets.AZURE_ACR_URL }} \
+          --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
+          --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
+          --dry-run=client -o yaml | kubectl apply -f -
       
     - name: Deploy to AKS
       run: |
