@@ -1,16 +1,16 @@
 menu:
   image:
-    repository: restaurant/menu  # For local: restaurant/menu
+    repository: acrad0mka.azurecr.io/menu  # For local: restaurant/menu
     tag: latest
-    pullPolicy: Never            # For local: Never
+    pullPolicy: Always            # For local: Never
   config:
     port: "8080"
 
 waiter:
   image:
-    repository: restaurant/waiter  # For local: restaurant/waiter
+    repository: acrad0mka.azurecr.io/waiter  # For local: restaurant/waiter
     tag: latest
-    pullPolicy: Never              # For local: Never
+    pullPolicy: Always              # For local: Never
   config:
     port: "8081"
 
@@ -30,8 +30,8 @@ postgres:
 
 chef:
   image:
-    repository: restaurant/chef  # For local: restaurant/chef
+    repository: acrad0mka.azurecr.io/chef  # For local: restaurant/chef
     tag: latest
-    pullPolicy: Never            # For local: Never
+    pullPolicy: Always            # For local: Never
   config:
     port: "8080"
