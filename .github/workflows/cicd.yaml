@@ -111,7 +111,7 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONF }}" > ~/.kube/config
           chmod 600 ~/.kube/config
-          kubectl config set clusters.minikube.server https://${{ secrets.LOCALKUBEIP }}:8888
+          kubectl config set clusters.minikube.server https://${{ secrets.LOCALKUBEIP }}:8443
           kubectl config use-context minikube
           kubectl cluster-info || exit 1
     - name: Deploy to Kubernetes
