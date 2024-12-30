@@ -2,7 +2,7 @@ name: Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "cicd_test" ]
 
 env:
   MENU_IMAGE_NAME: menu
@@ -97,25 +97,32 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    - name: Get AKS Credentials
-      uses: azure/aks-set-context@v3
-      with:
-        resource-group: ${{ secrets.RESOURCE_GROUP }}
-        cluster-name: ${{ secrets.AKS_CLUSTER }}
     - name: Set up Helm
       uses: azure/setup-helm@v3
-    - name: Create ACR Secret
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+    - name: Configure Kubernetes to connect to Minikube
       run: |
-        kubectl create secret docker-registry acr-secret \
-          --docker-server=${{ secrets.AZURE_ACR_URL }} \
-          --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
-          --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
-          --dry-run=client -o yaml | kubectl apply -f -
+          echo "${{ secrets.KUBE_CONF }}" > ~/.kube/config
+          kubectl config set clusters.minikube.server https://${{ secrets.LOCALKUBEIP }}:8443
+          kubectl config use-context minikube
+    # - uses: actions/checkout@v4
+    # - name: Azure Login
+    #   uses: azure/login@v1
+    #   with:
+    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+    # - name: Get AKS Credentials
+    #   uses: azure/aks-set-context@v3
+    #   with:
+    #     resource-group: ${{ secrets.RESOURCE_GROUP }}
+    #     cluster-name: ${{ secrets.AKS_CLUSTER }}
+    # - name: Create ACR Secret
+    #   run: |
+    #     kubectl create secret docker-registry acr-secret \
+    #       --docker-server=${{ secrets.AZURE_ACR_URL }} \
+    #       --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
+    #       --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
+    #       --dry-run=client -o yaml | kubectl apply -f -
     - name: Deploy to AKS
       run: |
         if helm list | grep -q "restaurant"; then
