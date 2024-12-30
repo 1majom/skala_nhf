@@ -65,7 +65,7 @@ jobs:
           --docker-server=${{ secrets.AZURE_ACR_URL }} \
           --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
           --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
-      --dry-run=client -o yaml | kubectl apply -f -
+          --dry-run=client -o yaml | kubectl apply -f -
       
     - name: Deploy to AKS
       run: |
