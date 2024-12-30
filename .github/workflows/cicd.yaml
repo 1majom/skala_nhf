@@ -10,42 +10,93 @@ env:
   CHEF_IMAGE_NAME: chef
 
 jobs:
-  build-and-push:
+  check-changes:
     runs-on: ubuntu-latest
-    
+    outputs:
+      menu: ${{ steps.filter.outputs.menu }}
+      waiter: ${{ steps.filter.outputs.waiter }}
+      chef: ${{ steps.filter.outputs.chef }}
     steps:
     - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          menu:
+            - 'src/menu/**'
+          waiter:
+            - 'src/waiter/**'
+          chef:
+            - 'src/chef/**'
 
+  build-menu:
+    needs: check-changes
+    if: needs.check-changes.outputs.menu == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-        
     - name: Login to Azure Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-        
     - name: Build and push Menu service
       uses: docker/build-push-action@v5
       with:
         context: ./src/menu
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/menu:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/menu:latest
-        
+
+  build-waiter:
+    needs: check-changes
+    if: needs.check-changes.outputs.waiter == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Login to Azure Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.AZURE_ACR_URL }}
+        username: ${{ secrets.AZURE_ACR_USERNAME }}
+        password: ${{ secrets.AZURE_ACR_PASSWORD }}
     - name: Build and push Waiter service
       uses: docker/build-push-action@v5
       with:
         context: ./src/waiter
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/waiter:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/waiter:latest
-        
+
+  build-chef:
+    needs: check-changes
+    if: needs.check-changes.outputs.chef == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Login to Azure Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.AZURE_ACR_URL }}
+        username: ${{ secrets.AZURE_ACR_USERNAME }}
+        password: ${{ secrets.AZURE_ACR_PASSWORD }}
     - name: Build and push Chef service
       uses: docker/build-push-action@v5
       with:
         context: ./src/chef
         push: true
         tags: ${{ secrets.AZURE_ACR_URL }}/chef:${{ github.sha }},${{ secrets.AZURE_ACR_URL }}/chef:latest
+
+  deploy:
+    needs: [build-menu, build-waiter, build-chef]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
     - name: Azure Login
       uses: azure/login@v1
       with:
@@ -55,10 +106,8 @@ jobs:
       with:
         resource-group: ${{ secrets.RESOURCE_GROUP }}
         cluster-name: ${{ secrets.AKS_CLUSTER }}
-
     - name: Set up Helm
       uses: azure/setup-helm@v3
-
     - name: Create ACR Secret
       run: |
         kubectl create secret docker-registry acr-secret \
@@ -66,32 +115,19 @@ jobs:
           --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
           --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
           --dry-run=client -o yaml | kubectl apply -f -
-      
     - name: Deploy to AKS
       run: |
         if helm list | grep -q "restaurant"; then
-          # Upgrade existing deployment
           helm upgrade restaurant ./src/restaurant \
             --set menu.image.tag=${{ github.sha }} \
             --set waiter.image.tag=${{ github.sha }} \
             --set chef.image.tag=${{ github.sha }}
         else
-          # First deployment
           helm install restaurant ./src/restaurant \
             --set menu.image.tag=${{ github.sha }} \
             --set waiter.image.tag=${{ github.sha }} \
             --set chef.image.tag=${{ github.sha }}
         fi
-
-
-
-
-
-
-
-
-
-
 
 
 
