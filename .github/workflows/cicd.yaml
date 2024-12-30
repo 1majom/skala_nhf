@@ -94,6 +94,7 @@ jobs:
 
   deploy:
     needs: [build-menu, build-waiter, build-chef]
+    if: always()
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
