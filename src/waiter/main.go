@@ -272,8 +272,27 @@ func markOrdersAsPaid(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Internal server error", http.StatusInternalServerError)
         return
     }
+    var totalPaid int
+    err = db.QueryRow("SELECT COALESCE(SUM(subtotal), 0) FROM completed_orders WHERE table_number = $1 AND paid = true", tableNumber).Scan(&totalPaid)
+    if err != nil {
+        log.Printf("Error querying total paid: %v", err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
 
+    response := struct {
+        TotalPaid int `json:"need_to_pay"`
+    }{
+        TotalPaid: totalPaid,
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    if err := json.NewEncoder(w).Encode(response); err != nil {
+        log.Printf("Error encoding response: %v", err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+    }
     w.WriteHeader(http.StatusOK)
+
 }
 
 func getVersion(w http.ResponseWriter, r *http.Request) {
