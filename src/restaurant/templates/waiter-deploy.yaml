@@ -32,5 +32,7 @@ spec:
         env:
         - name: PORT
           value: "8081"
+        - name: DATABASE_URL
+          value: "postgres://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}?sslmode=disable"
         - name: AMQP_ADDR
           value: "amqp://{{ .Values.rabbitmq.user }}:{{ .Values.rabbitmq.password }}@{{ .Values.rabbitmq.host }}:{{ .Values.rabbitmq.port }}/%2f"
