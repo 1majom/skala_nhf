@@ -231,7 +231,6 @@ func getOrders(w http.ResponseWriter, r *http.Request) {
             return
         }
         totalSum += order.Subtotal
-        order.TableNumber = 0 // hide the table number from the responose because we know it
         orders = append(orders, order)
     }
 
@@ -266,7 +265,7 @@ func markOrdersAsPaid(w http.ResponseWriter, r *http.Request) {
     }
     defer db.Close()
     var totalPaid int
-    err = db.QueryRow("SELECT COALESCE(SUM(subtotal), 0) FROM completed_orders WHERE table_number = $1 AND paid = true", tableNumber).Scan(&totalPaid)
+    err = db.QueryRow("SELECT COALESCE(SUM(subtotal), 0) FROM completed_orders WHERE table_number = $1 AND paid = false", tableNumber).Scan(&totalPaid)
     if err != nil {
         log.Printf("Error querying total paid: %v", err)
         http.Error(w, "Internal server error", http.StatusInternalServerError)
