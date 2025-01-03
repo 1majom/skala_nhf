@@ -1,15 +1,18 @@
-### Skála nagyházifeladat
+# Skálázható szoftverek - Nagy házi feladat
 
-Egy éttermi ügyviteli rendszert szeretnék felépíteni. Amit próbáltam olyan módon elképzelni, hogy tükrözhesse az elvárásokat.
+Egy éttermi ügyviteli rendszert szeretnék felépíteni. Vannak enyhén valószerűtlen részei, pl, a széf 10 másodperc után bármilyen fajta és mennyiségű rendelést ki tud rakni a pultra.
+Aktorok, az ábrán a köralakú node-ok:
   -  vendég
      -  az emberek akik rendelést adnak le, feltételezzük, hogy előre fizetnek
   -  személyzet
      -  emberek akik adminisztráláják az éttermet
+
+Szolgáltatások:
   -  menü backend
      -  itt lehet megtekinteni az ételeket GETtel
-      - szerkeszthetőek az aktuálisan elérhető ételek, POST v. PATCH segítségével, a menüben
+     - szerkeszthetőek az aktuálisan elérhető ételek, POST v. PATCH segítségével
   -  Pincér backend
-     - a vendégek POST-tal adhatnak le rendelést
+     - a vendégek POST-tal adhatnak le ennek rendelést
        - ekkor a rendelés bekerül egy rabbitMQ-s  message queueba
      - a pincérek meg tudják tekinteni, hogy egy adott asztalnál milyen rendelések voltak eddig
      - ha egy asztal rendezi az összes rendelését, mert távoznak azt az adatbázisban rajta keresztül tudjuk rendezni
@@ -20,7 +23,6 @@ Egy éttermi ügyviteli rendszert szeretnék felépíteni. Amit próbáltam olya
      -  Az éppen konyhán elvégzett rendelés kikerül a vendéghez. Ezért a kész rendeléseket beírja a DB-be is dátum, étel, ár formában, viszont a fizetettségét az egyes rendelések hamisra állítja
 <div style="page-break-after: always;"></div>
 
-A kör alakú node-ok csak a felhasználókat jelzik.
 
 
 ```mermaid

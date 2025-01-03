@@ -71,26 +71,52 @@ echo "MENU $MENU"
 echo "WAITER $WAITER"
 echo "RABBITMQ in browser $RABBITMQ"
 
-
+curl http://$MENU/menu
+echo ""
 curl -X POST http://$MENU/menu \
 -H "Content-Type: application/json" \
 -d '{
   "name": "Gulyásleves",
-  "price": 2500,
+  "price": 1500,
   "is_available": true
 }'
-curl http://$MENU/menu
 echo ""
 curl -X POST http://$MENU/menu \
 -H "Content-Type: application/json" \
 -d '{
-  "name": "kola",
+  "name": "kóla",
   "price": 500,
+  "is_available": true
+}'
+echo ""
+curl -X POST http://$MENU/menu \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Lángos",
+  "price": 500,
+  "is_available": true
+}'
+echo ""
+curl -X POST http://$MENU/menu \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Dobos Torta",
+  "price": 1000,
+  "is_available": true
+}'
+
+echo ""
+curl -X POST http://$MENU/menu \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Hortobágyi Palacsinta",
+  "price": 1000,
   "is_available": true
 }'
 echo ""
 curl http://$MENU/menu
 echo ""
+
 curl -X POST http://$WAITER/order \
 -H "Content-Type: application/json" \
 -d '{
@@ -99,16 +125,85 @@ curl -X POST http://$WAITER/order \
     {
       "menu_item_id": 1,
       "quantity": 2
+    },
+    {
+      "menu_item_id": 2,
+      "quantity": 1
     }
   ]
 }'
+echo ""
+curl -X POST http://$WAITER/order \
+-H "Content-Type: application/json" \
+-d '{
+  "table_number": 2,
+  "items": [
+    {
+      "menu_item_id": 3,
+      "quantity": 1
+    },
+    {
+      "menu_item_id": 4,
+      "quantity": 2
+    }
+  ]
+}'
+echo ""
+curl -X POST http://$WAITER/order \
+-H "Content-Type: application/json" \
+-d '{
+  "table_number": 3,
+  "items": [
+    {
+      "menu_item_id": 1,
+      "quantity": 1
+    },
+    {
+      "menu_item_id": 2,
+      "quantity": 1
+    },
+    {
+      "menu_item_id": 3,
+      "quantity": 1
+    },
+    {
+      "menu_item_id": 4,
+      "quantity": 1
+    }
+  ]
+}'
+echo ""
+curl -X POST http://$WAITER/order \
+-H "Content-Type: application/json" \
+-d '{
+  "table_number": 4,
+  "items": [
+    {
+      "menu_item_id": 2,
+      "quantity": 3
+    },
+    {
+      "menu_item_id": 4,
+      "quantity": 1
+    }
+  ]
+}'
+echo ""
 
-sleep 12s
+
+### itt varni kell
+
 curl http://$WAITER/orders/1
 echo ""
-curl http://$WAITER/orders/1/pay
+curl  -X POST  http://$WAITER/orders/1/pay
 echo ""
 curl http://$WAITER/orders/1
+
+
+curl  -X POST  http://$WAITER/orders/2/pay
+curl  -X POST   http://$WAITER/orders/3/pay
+curl -X POST   http://$WAITER/orders/4/pay
+
 
 
 # For debugging locally
@@ -116,4 +211,8 @@ kubectl exec -it $(kubectl get pods -l app=postgres -o jsonpath="{.items[0].meta
 kubectl exec -it $(kubectl get pods -l app=postgres -o jsonpath="{.items[0].metadata.name}") -- psql -U restaurant -d restaurant -c "SELECT * FROM completed_orders;"
 kubectl exec -it $(kubectl get pods -l app=postgres -o jsonpath="{.items[0].metadata.name}") -- psql -U restaurant -d restaurant -c "\dt"
 
-
+# jelentes keszito job
+kubectl delete job orders-report
+kubectl apply -f /home/ubi/skala_nhf/src/orders-report-job.yaml
+sleep 2s
+kubectl logs $(kubectl get pods --selector=job-name=orders-report --output=jsonpath='{.items[0].metadata.name}')
