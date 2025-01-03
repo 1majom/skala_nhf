@@ -5,7 +5,7 @@ on:
     branches: [ "cicd_test" ]
 
 env:
-  FORCE_BUILD: true
+  FORCE_BUILD: false
   VERSION: ${{ format('{0}{1}', 'v', github.run_number) }}
 
 jobs:
@@ -15,8 +15,13 @@ jobs:
       menu: ${{ steps.filter.outputs.menu }}
       waiter: ${{ steps.filter.outputs.waiter }}
       chef: ${{ steps.filter.outputs.chef }}
+      force_build: ${{ steps.set_force.outputs.force }}
     steps:
     - uses: actions/checkout@v4
+    - name: Set force build output
+      id: set_force
+      run: |
+        echo "force=${{ env.FORCE_BUILD }}" >> $GITHUB_OUTPUT
     - name: Debug Environment
       run: |
         echo "FORCE_BUILD from env: ${{ env.FORCE_BUILD }}"
@@ -37,7 +42,7 @@ jobs:
 
   build-menu:
     needs: check-changes
-    if: needs.check-changes.outputs.menu == 'true' || 0
+    if: needs.check-changes.outputs.menu == 'true' || needs.check-changes.outputs.force_build == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -60,7 +65,7 @@ jobs:
 
   build-waiter:
     needs: check-changes
-    if: needs.check-changes.outputs.waiter == 'true' || 1
+    if: needs.check-changes.outputs.waiter == 'true' || needs.check-changes.outputs.force_build == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -83,7 +88,7 @@ jobs:
 
   build-chef:
     needs: check-changes
-    if: needs.check-changes.outputs.chef == 'true' || 0
+    if: needs.check-changes.outputs.chef == 'true' || needs.check-changes.outputs.force_build == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -133,12 +138,17 @@ jobs:
       run: |
         if helm list | grep -q "restaurant"; then
           helm upgrade restaurant ./src/restaurant \
-            --set menu.image.tag=latest \
-            --set waiter.image.tag=latest \
-            --set chef.image.tag=latest
+            --set menu.image.tag=${{ needs.check-changes.outputs.menu == 'true' && env.VERSION || 'latest' }} \
+            --set waiter.image.tag=${{ needs.check-changes.outputs.waiter == 'true' && env.VERSION || 'latest' }} \
+            --set chef.image.tag=${{ needs.check-changes.outputs.chef == 'true' && env.VERSION || 'latest' }} 
+
+          ${{ needs.check-changes.outputs.menu == 'true' }} && kubectl rollout restart deployment menu
+          ${{ needs.check-changes.outputs.waiter == 'true' }} && kubectl rollout restart deployment waiter
+          ${{ needs.check-changes.outputs.chef == 'true' }} && kubectl rollout restart deployment chef
         else
+          # For initial install, always use latest
           helm install restaurant ./src/restaurant \
             --set menu.image.tag=latest \
             --set waiter.image.tag=latest \
-            --set chef.image.tag=latest
+            --set chef.image.tag=latest 
         fi
