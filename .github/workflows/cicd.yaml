@@ -32,6 +32,7 @@ jobs:
     - uses: dorny/paths-filter@v2
       id: filter
       with:
+        base: 'cicd_test' 
         filters: |
           menu:
             - 'src/menu/**'
@@ -142,9 +143,9 @@ jobs:
             --set waiter.image.tag=${{ needs.check-changes.outputs.waiter == 'true' && env.VERSION || 'latest' }} \
             --set chef.image.tag=${{ needs.check-changes.outputs.chef == 'true' && env.VERSION || 'latest' }} 
 
-          ${{ needs.check-changes.outputs.menu == 'true' }} && kubectl rollout restart deployment menu
-          ${{ needs.check-changes.outputs.waiter == 'true' }} && kubectl rollout restart deployment waiter
-          ${{ needs.check-changes.outputs.chef == 'true' }} && kubectl rollout restart deployment chef
+          ${{ needs.check-changes.outputs.menu == 'true' }} && kubectl rollout restart deployment menu || true
+          ${{ needs.check-changes.outputs.waiter == 'true' }} && kubectl rollout restart deployment waiter || true
+          ${{ needs.check-changes.outputs.chef == 'true' }} && kubectl rollout restart deployment chef || true
         else
           # For initial install, always use latest
           helm install restaurant ./src/restaurant \
