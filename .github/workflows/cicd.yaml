@@ -6,6 +6,7 @@ on:
 
 env:
   FORCE_BUILD: true
+  VERSION: ${{ format('{0}{1}', 'v', github.run_number) }}  # Using run_number for unique versioning
 
 jobs:
   check-changes:
@@ -20,6 +21,7 @@ jobs:
       run: |
         echo "FORCE_BUILD from env: ${{ env.FORCE_BUILD }}"
         echo "FORCE_BUILD directly: $FORCE_BUILD"
+        echo "VERSION: ${{ env.VERSION }}"
         echo "All environment variables:"
         env
     - uses: dorny/paths-filter@v2
@@ -47,11 +49,6 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-    - name: Set build version
-      id: build_version
-      run: |
-        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-
     - name: Build and push Menu service
       uses: docker/build-push-action@v5
       with:
@@ -59,7 +56,7 @@ jobs:
         push: true
         tags: |
           ${{ secrets.AZURE_ACR_URL }}/menu:latest
-          ${{ secrets.AZURE_ACR_URL }}/menu:${{ steps.build_version.outputs.VERSION }}
+          ${{ secrets.AZURE_ACR_URL }}/menu:${{ env.VERSION }}
 
   build-waiter:
     needs: check-changes
@@ -75,19 +72,14 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-    - name: Set build version
-      id: build_version
-      run: |
-        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-
-    - name: Build and push Menu service
+    - name: Build and push Waiter service
       uses: docker/build-push-action@v5
       with:
         context: ./src/waiter
         push: true
         tags: |
           ${{ secrets.AZURE_ACR_URL }}/waiter:latest
-          ${{ secrets.AZURE_ACR_URL }}/waiter:${{ steps.build_version.outputs.VERSION }}
+          ${{ secrets.AZURE_ACR_URL }}/waiter:${{ env.VERSION }}
 
   build-chef:
     needs: check-changes
@@ -103,19 +95,14 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-    - name: Set build version
-      id: build_version
-      run: |
-        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-
-    - name: Build and push Menu service
+    - name: Build and push Chef service
       uses: docker/build-push-action@v5
       with:
         context: ./src/chef
         push: true
         tags: |
           ${{ secrets.AZURE_ACR_URL }}/chef:latest
-          ${{ secrets.AZURE_ACR_URL }}/chef:${{ steps.build_version.outputs.VERSION }}
+          ${{ secrets.AZURE_ACR_URL }}/chef:${{ env.VERSION }}
 
   deploy:
     needs: [check-changes, build-menu, build-waiter, build-chef]
@@ -144,15 +131,14 @@ jobs:
           --dry-run=client -o yaml | kubectl apply -f -
     - name: Deploy to Kubernetes
       run: |
-        VERSION=${{ steps.build_version.outputs.VERSION }}
         if helm list | grep -q "restaurant"; then
           helm upgrade restaurant ./src/restaurant \
-          --set menu.image.tag=$VERSION \
-          --set waiter.image.tag=$VERSION \
-          --set chef.image.tag=$VERSION \
+            --set menu.image.tag=${{ env.VERSION }} \
+            --set waiter.image.tag=${{ env.VERSION }} \
+            --set chef.image.tag=${{ env.VERSION }}
         else
           helm install restaurant ./src/restaurant \
-            --set menu.image.tag=latest \
-            --set waiter.image.tag=latest \
-            --set chef.image.tag=latest
+            --set menu.image.tag=${{ env.VERSION }} \
+            --set waiter.image.tag=${{ env.VERSION }} \
+            --set chef.image.tag=${{ env.VERSION }}
         fi
