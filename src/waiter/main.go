@@ -265,13 +265,6 @@ func markOrdersAsPaid(w http.ResponseWriter, r *http.Request) {
         log.Fatal("Failed to connect to database:", err)
     }
     defer db.Close()
-
-    _, err = db.Exec("UPDATE completed_orders SET paid = true WHERE table_number = $1 AND paid = false", tableNumber)
-    if err != nil {
-        log.Printf("Error updating orders: %v", err)
-        http.Error(w, "Internal server error", http.StatusInternalServerError)
-        return
-    }
     var totalPaid int
     err = db.QueryRow("SELECT COALESCE(SUM(subtotal), 0) FROM completed_orders WHERE table_number = $1 AND paid = true", tableNumber).Scan(&totalPaid)
     if err != nil {
@@ -286,6 +279,13 @@ func markOrdersAsPaid(w http.ResponseWriter, r *http.Request) {
         TotalPaid: totalPaid,
     }
 
+    _, err = db.Exec("UPDATE completed_orders SET paid = true WHERE table_number = $1 AND paid = false", tableNumber)
+    if err != nil {
+        log.Printf("Error updating orders: %v", err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
+    
     w.Header().Set("Content-Type", "application/json")
     if err := json.NewEncoder(w).Encode(response); err != nil {
         log.Printf("Error encoding response: %v", err)
