@@ -32,6 +32,7 @@ jobs:
     - uses: dorny/paths-filter@v2
       id: filter
       with:
+        base: 'HEAD^' 
         filters: |
           menu:
             - 'src/menu/**'
