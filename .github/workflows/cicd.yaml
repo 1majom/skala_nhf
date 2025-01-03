@@ -47,12 +47,19 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
+    - name: Set build version
+      id: build_version
+      run: |
+        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
     - name: Build and push Menu service
       uses: docker/build-push-action@v5
       with:
         context: ./src/menu
         push: true
-        tags: ${{ secrets.AZURE_ACR_URL }}/menu:latest,${{ secrets.AZURE_ACR_URL }}/menu:latest
+        tags: |
+          ${{ secrets.AZURE_ACR_URL }}/menu:latest
+          ${{ secrets.AZURE_ACR_URL }}/menu:${{ steps.build_version.outputs.VERSION }}
 
   build-waiter:
     needs: check-changes
@@ -68,12 +75,19 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-    - name: Build and push Waiter service
+    - name: Set build version
+      id: build_version
+      run: |
+        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+    - name: Build and push Menu service
       uses: docker/build-push-action@v5
       with:
         context: ./src/waiter
         push: true
-        tags: ${{ secrets.AZURE_ACR_URL }}/waiter:latest,${{ secrets.AZURE_ACR_URL }}/waiter:latest
+        tags: |
+          ${{ secrets.AZURE_ACR_URL }}/waiter:latest
+          ${{ secrets.AZURE_ACR_URL }}/waiter:${{ steps.build_version.outputs.VERSION }}
 
   build-chef:
     needs: check-changes
@@ -89,12 +103,19 @@ jobs:
         registry: ${{ secrets.AZURE_ACR_URL }}
         username: ${{ secrets.AZURE_ACR_USERNAME }}
         password: ${{ secrets.AZURE_ACR_PASSWORD }}
-    - name: Build and push Chef service
+    - name: Set build version
+      id: build_version
+      run: |
+        echo "VERSION=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+    - name: Build and push Menu service
       uses: docker/build-push-action@v5
       with:
         context: ./src/chef
         push: true
-        tags: ${{ secrets.AZURE_ACR_URL }}/chef:latest,${{ secrets.AZURE_ACR_URL }}/chef:latest
+        tags: |
+          ${{ secrets.AZURE_ACR_URL }}/chef:latest
+          ${{ secrets.AZURE_ACR_URL }}/chef:${{ steps.build_version.outputs.VERSION }}
 
   deploy:
     needs: [check-changes, build-menu, build-waiter, build-chef]
@@ -123,11 +144,12 @@ jobs:
           --dry-run=client -o yaml | kubectl apply -f -
     - name: Deploy to Kubernetes
       run: |
+        VERSION=${{ steps.build_version.outputs.VERSION }}
         if helm list | grep -q "restaurant"; then
           helm upgrade restaurant ./src/restaurant \
-            --set menu.image.tag=latest \
-            --set waiter.image.tag=latest \
-            --set chef.image.tag=latest
+          --set menu.image.tag=$VERSION \
+          --set waiter.image.tag=$VERSION \
+          --set chef.image.tag=$VERSION \
         else
           helm install restaurant ./src/restaurant \
             --set menu.image.tag=latest \
