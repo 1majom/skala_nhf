@@ -5,7 +5,7 @@ metadata:
   labels:
     app: rabbitmq
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - name: ampq  
       port: {{ .Values.rabbitmq.port }}

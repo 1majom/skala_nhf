@@ -8,4 +8,4 @@ spec:
   ports:
   - port: {{ .Values.menu.config.port }}
     targetPort: {{ .Values.menu.config.port }}
-  type: NodePort
+  type: LoadBalancer

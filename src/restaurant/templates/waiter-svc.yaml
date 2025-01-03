@@ -8,4 +8,4 @@ spec:
   ports:
   - port: {{ .Values.waiter.config.port }}
     targetPort: {{ .Values.waiter.config.port }}
-  type: NodePort
+  type: LoadBalancer
