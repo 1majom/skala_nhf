@@ -216,6 +216,7 @@ func getOrders(w http.ResponseWriter, r *http.Request) {
     defer rows.Close()
 
     var orders []Order
+    var totalSum int
     for rows.Next() {
         var order Order
         var items string
@@ -229,11 +230,21 @@ func getOrders(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "Internal server error", http.StatusInternalServerError)
             return
         }
+        totalSum += order.Subtotal
+        order.TableNumber = 0 // hide the table number from the responose because we know it
         orders = append(orders, order)
     }
 
+    response := struct {
+        Orders   []Order `json:"orders"`
+        TotalSum int     `json:"total_sum"`
+    }{
+        Orders:   orders,
+        TotalSum: totalSum,
+    }
+
     w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(orders); err != nil {
+    if err := json.NewEncoder(w).Encode(response); err != nil {
         log.Printf("Error encoding response: %v", err)
         http.Error(w, "Internal server error", http.StatusInternalServerError)
     }
