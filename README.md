@@ -1,6 +1,7 @@
 # Skálázható szoftverek - Nagy házi feladat
 
 Egy éttermi ügyviteli rendszert szeretnék felépíteni. Vannak enyhén valószerűtlen részei, pl, a széf 10 másodperc után bármilyen fajta és mennyiségű rendelést ki tud rakni a pultra.
+
 Aktorok, az ábrán a köralakú node-ok:
   -  vendég
      -  az emberek akik rendelést adnak le, feltételezzük, hogy előre fizetnek
@@ -31,17 +32,19 @@ graph TD
     2((személyzet))
 
     subgraph "k8s"
-      3[menü backend]
+      3[Menü backend]
       4[Pincér backend]
       10[Postgres DB]
       5[RabbitMQ]
       6[Séf backend]
     end
-        
+    2 -.-> 10
     1 --> 3
+    4 --> 3
     1 --> 4
     2 --> 3
     4 --> 5
+   
     5 --> 6
     6 --> 10
     3 --> 10
@@ -62,7 +65,7 @@ graph TD
   - Kubernetes Secret objektum használata titok tárolására
 - CICD;10
   - CI/CD folyamat implementálása valamely elterjedt DevOps eszközre építve (GitHub Actions, Azure DevOps). Git push-ra a backend új verziója elkészül és kitelepül: - egy platformra telepít 10 pont
-- OPACR;5
+- OPACR;10
   - Konténerek vagy helm chart(ok) letöltése on-premise klaszterbe saját Azure Container Registry-ből: autentikációval pl. image pull secret-tel 10 pont
 - OPARC;5
   - On-premise Kubernetes bekötése Azure Arc-ba: A szolgáltatás bekötése 5 pont
@@ -75,12 +78,9 @@ de belül több részre (mikroszolgáltatás) van darabolva. A mikroszolgáltat�
     - Válaszott: saját gépen futó (on-premise) Kubernetes (K8S)
 - ASYNCCOMM;5
   - Aszinkron, üzenetsor alapú kommunikáció mikroszolgáltatások között saját telepítésű (pl. RabbitMQ konténer) üzenetsor, üzenetkezelő (messaging) szolgáltatással: Integrációs esemény eventually consistency adatkezeléshez 5 pont 
+- K8SJOB;5
+  - Kubernetes Job objektum használata, lefuttatása védéskor: 5 pont  
 - ALLHF;6
   - összes kisházi, nagyházi független pont
 - CONTRIB;1
   - 1 kisebb kontribúció, nagyházi független pont
-
-
-
-
-Sum: 78
