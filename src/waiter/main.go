@@ -36,7 +36,7 @@ type OrderEvent struct {
 var amqpConn *amqp.Connection
 var amqpChannel *amqp.Channel
 
-const version = "1.0.7"
+const version = "1.0.8"
 
 func main() {
 	log.Printf("Starting waiter service...")
