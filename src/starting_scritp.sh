@@ -106,6 +106,10 @@ curl -X POST http://$MENU/menu \
 }'
 
 echo ""
+curl http://$MENU/menu
+echo ""
+
+
 curl -X POST http://$MENU/menu \
 -H "Content-Type: application/json" \
 -d '{

@@ -5,7 +5,7 @@ on:
     branches: [ "cicd_test" ]
 
 env:
-  FORCE_BUILD: true
+  FORCE_BUILD: false
   VERSION: ${{ format('{0}{1}', 'v', github.run_number) }}
 
 jobs:
