@@ -25,7 +25,7 @@ minikube start --listen-address=0.0.0.0 --apiserver-ips={} --mount-string="/home
 ## kulso elereshez kell sajnos mivel csak vmben tudtad futtatni a minikubeot, viszont a virtualizacio miatt konnyeden csak a dockeres driver ment, igy fontos a socat parancsot is kiadni, kulonben nem lesz elerheto github action altal!
 socat TCP-LISTEN:8443,fork,bind=0.0.0.0,reuseaddr TCP:$(minikube ip):8443
 ## kubeconfig secretbe!
-kubectl config view --minify --raw --output
+kubectl config view --minify --raw --flatten
 
 ## arcba kotes 
 ### https://learn.microsoft.com/en-gb/azure/azure-arc/kubernetes/quickstart-connect-cluster?tabs=azure-cli#register-providers-for-azure-arc-enabled-kubernetes
