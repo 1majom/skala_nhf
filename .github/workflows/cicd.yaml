@@ -130,11 +130,15 @@ jobs:
           kubectl cluster-info || exit 1
     - name: Create ACR Secret
       run: |
-        kubectl create secret docker-registry acr-secret \
-          --docker-server=${{ secrets.AZURE_ACR_URL }} \
-          --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
-          --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
-          --dry-run=client -o yaml | kubectl apply -f -
+        if kubectl get secret acr-secret; then
+          echo "Secret acr-secret already exists, skipping creation."
+        else
+          kubectl create secret docker-registry acr-secret \
+            --docker-server=${{ secrets.AZURE_ACR_URL }} \
+            --docker-username=${{ secrets.AZURE_ACR_USERNAME }} \
+            --docker-password=${{ secrets.AZURE_ACR_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+        fi
     - name: Deploy to Kubernetes
       run: |
         if helm list | grep -q "restaurant"; then
