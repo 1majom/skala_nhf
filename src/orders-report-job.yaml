@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: orders-report
+spec:
+  template:
+    spec:
+      containers:
+      - name: orders-report
+        image: "postgres:15-alpine"
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Create reports directory
+          mkdir -p /data/reports
+
+          # Check if the 'completed_orders' table exists
+          if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -tAc "SELECT 1 FROM information_schema.tables WHERE table_name = 'completed_orders'" > /dev/null; then
+            echo "# Error Report" > "/data/reports/error_report.md"
+            echo "Generated on $(date)" >> "/data/reports/error_report.md"
+            echo >> "/data/reports/error_report.md"
+            echo "Error: Cannot connect to database or table 'completed_orders' does not exist." >> "/data/reports/error_report.md"
+            chmod 644 "/data/reports/error_report.md"
+            cat "/data/reports/error_report.md"
+            exit 1
+          fi
+
+          TODAY=$(date +%Y-%m-%d)
+          REPORT_PATH="/data/reports/orders_${TODAY}.md"
+
+          # Generate report
+          PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -tAc "
+          SELECT format('# Restaurant Orders Report for %s', CURRENT_DATE);
+          SELECT format('Generated on %s', CURRENT_TIMESTAMP);
+          SELECT '';
+          SELECT '## Completed and Paid Orders';
+          SELECT '';
+          SELECT '### Orders List:';
+          SELECT CASE 
+            WHEN COUNT(*) = 0 THEN E'\nNo orders found for this date.\n'
+            ELSE string_agg(
+              E'\n* Order Details:\n' ||
+              E'  - Table: ' || table_number::text || E'\n' ||
+              E'  - Date: ' || order_date::text || E'\n' ||
+              E'  - Items:\n' || (
+                SELECT string_agg(
+                  E'    - ' || mi.name || E' (Quantity: ' || oi.quantity::text || E')\n',
+                  ''
+                )
+                FROM jsonb_to_recordset(items::jsonb) AS oi(menu_item_id int, quantity int)
+                JOIN menu_items mi ON oi.menu_item_id = mi.id
+              ) ||
+              E'  - Subtotal: $' || subtotal::text || E'\n',
+              E'\n'
+            )
+          END
+          FROM completed_orders WHERE paid = true AND order_date::date = CURRENT_DATE;
+          SELECT '';
+          SELECT '### Daily Summary';
+          SELECT format(E'\nTotal Orders: %s\nTotal Revenue: $%s',
+            COUNT(*)::text,
+            COALESCE(SUM(subtotal), 0)::text
+          )
+          FROM completed_orders WHERE paid = true AND order_date::date = CURRENT_DATE;
+          " > "$REPORT_PATH"
+
+          chmod 644 "$REPORT_PATH"
+          echo "Report generated successfully:"
+          cat "$REPORT_PATH"
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secret
+              key: POSTGRES_DB
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /data
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      restartPolicy: OnFailure

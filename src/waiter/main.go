@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -20,11 +23,20 @@ type OrderItem struct {
 type Order struct {
 	TableNumber int         `json:"table_number"`
 	Items       []OrderItem `json:"items"`
-	TotalPrice  float64     `json:"total_price"`
+	Subtotal    int         `json:"subtotal"`
+}
+
+type OrderEvent struct {
+	EventID   string    `json:"event_id"`
+	EventType string    `json:"event_type"`
+	Timestamp time.Time `json:"timestamp"`
+	Order     Order     `json:"order"`
 }
 
 var amqpConn *amqp.Connection
 var amqpChannel *amqp.Channel
+
+const version = "1.0.8"
 
 func main() {
 	log.Printf("Starting waiter service...")
@@ -81,6 +93,9 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/order", handleOrder).Methods("POST")
+	r.HandleFunc("/orders/{tableNumber}", getOrders).Methods("GET")
+	r.HandleFunc("/orders/{tableNumber}/pay", markOrdersAsPaid).Methods("POST")
+	r.HandleFunc("/version", getVersion).Methods("GET")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -103,15 +118,46 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Decoded order: Table %d, %d items, total price: %.2f",
+	log.Printf("Decoded order: Table %d, %d items",
 		order.TableNumber,
-		len(order.Items),
-		order.TotalPrice)
+		len(order.Items))
 
-	orderJSON, err := json.Marshal(order)
+	// Connect to PostgreSQL
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://restaurant:devpassword@postgres:5432/restaurant?sslmode=disable"
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Printf("Error marshaling order to JSON: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	totalPrice := 0
+	for _, item := range order.Items {
+		var price int
+		err := db.QueryRow("SELECT price FROM menu_items WHERE id = $1", item.MenuItemID).Scan(&price)
+		if err != nil {
+			log.Printf("Error querying price for item %d: %v", item.MenuItemID, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		totalPrice += price * int(item.Quantity)
+	}
+
+	order.Subtotal = int(totalPrice)
+	event := OrderEvent{
+		EventID:   uuid.New().String(),
+		EventType: "OrderCreated",
+		Timestamp: time.Now(),
+		Order:     order,
+	}
+
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("Error marshalling order event: %v", err)
+		http.Error(w, "Failed to process order", http.StatusInternalServerError)
 		return
 	}
 
@@ -126,7 +172,7 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		false,    // immediate
 		amqp.Publishing{
 			ContentType: "application/json",
-			Body:        orderJSON,
+			Body:        eventJSON,
 		})
 
 	if err != nil {
@@ -142,5 +188,113 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(order); err != nil {
 		log.Printf("Error encoding response: %v", err)
 	}
-	log.Printf("Order processing complete, response sent to client")
+	log.Printf("Order processing complete, response sent to chef")
+}
+
+func getOrders(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tableNumber := vars["tableNumber"]
+
+	// Connect to PostgreSQL
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://restaurant:devpassword@postgres:5432/restaurant?sslmode=disable"
+	}
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT table_number, items, subtotal FROM completed_orders WHERE table_number = $1 AND paid = false", tableNumber)
+	if err != nil {
+		log.Printf("Error querying orders: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var orders []Order
+	var totalSum int
+	for rows.Next() {
+		var order Order
+		var items string
+		if err := rows.Scan(&order.TableNumber, &items, &order.Subtotal); err != nil {
+			log.Printf("Error scanning order: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if err := json.Unmarshal([]byte(items), &order.Items); err != nil {
+			log.Printf("Error unmarshalling items: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		totalSum += order.Subtotal
+		orders = append(orders, order)
+	}
+
+	response := struct {
+		Orders   []Order `json:"orders"`
+		TotalSum int     `json:"total_sum"`
+	}{
+		Orders:   orders,
+		TotalSum: totalSum,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func markOrdersAsPaid(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tableNumber := vars["tableNumber"]
+
+	// Connect to PostgreSQL
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://restaurant:devpassword@postgres:5432/restaurant?sslmode=disable"
+	}
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+	var totalPaid int
+	err = db.QueryRow("SELECT COALESCE(SUM(subtotal), 0) FROM completed_orders WHERE table_number = $1 AND paid = false", tableNumber).Scan(&totalPaid)
+	if err != nil {
+		log.Printf("Error querying total paid: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		TotalPaid int `json:"need_to_pay"`
+	}{
+		TotalPaid: totalPaid,
+	}
+
+	_, err = db.Exec("UPDATE completed_orders SET paid = true WHERE table_number = $1 AND paid = false", tableNumber)
+	if err != nil {
+		log.Printf("Error updating orders: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+
+}
+
+func getVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"version": version})
 }
