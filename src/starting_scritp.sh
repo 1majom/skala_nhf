@@ -14,6 +14,7 @@ az login
 az group create --name skala_nhf_ad0mka --location northeurope
 az acr create --resource-group skala_nhf_ad0mka               --name acrad0mka               --sku Basic               --admin-enabled true
 ### rakd be github secretbe!!!
+az acr update -n acrad0mka --admin-enabled true
 az acr credential show --name acrad0mka
 
 
